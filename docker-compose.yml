@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  db:
+    image: mongo:4.2
+    ## update host in config.yaml to map to this container name
+    container_name: mongo
+    # uses docker volume on host system, data is not transferrable between systems
+    volumes:
+      - db:/data/db/
+
+  rita:
+    image: quay.io/activecm/rita:${VERSION:-latest}
+    # needed to ensure creation of database on first run
+    depends_on:
+      - db
+    # set environment paths to container volume mount points
+    environment:
+      - CONFIG=/etc/rita/config.yaml
+      - LOGS=/logs
+    # bind mount for local configs and logs, make sure it matches environment
+    volumes:
+      - ./config.yaml:/etc/rita/config.yaml:ro
+      - ./zeek_logs_pcap:/logs:ro
+  
+  zeek:
+    image: blacktop/zeek
+
+    volumes:
+      - ./zeek_logs_pcap:/pcap
+      - ./zeek_logs_pcap:/usr/local/zeek-3.0.0/share/zeek/site/local.zeek
+
+# local docker volume used by mongo
+volumes:
+  db:
