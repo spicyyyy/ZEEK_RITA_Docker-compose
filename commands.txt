@@ -1,0 +1,12 @@
+
+#zeek command for pcap to zeek
+docker-compose run --rm zeek -r test.pcap
+
+#rita command to import logs
+docker-compose run --rm rita import /logs db1
+
+#rita show-beacons and append to file
+docker-compose run --rm rita show-beacons db1 >> ./beacon_results/db1_beacons.txt
+
+
+
