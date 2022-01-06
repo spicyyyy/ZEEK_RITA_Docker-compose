@@ -1,6 +1,9 @@
-# Zeek_Rita_Docker-Compose
+# ZEEK_RITA_
 
 This is a docker-compose project to incorporate RITA and ZEEK docker images for adhoc beacon analysis.
+
+Original docker-compose came frome active countersmeasures RITA repository. 
+blacktop/zeek was added to the docker-compose file for an easy spin up of all containers.
 
 
 
