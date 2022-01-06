@@ -3,6 +3,7 @@
 This is a docker-compose project to incorporate RITA and ZEEK docker images for adhoc beacon analysis.
 
 
+
 **Step 1:** 
 
 Place the pcap you want to analyze in /zeek_logs_pcap. 
