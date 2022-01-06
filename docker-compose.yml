@@ -3,7 +3,7 @@ version: '3'
 services:
   db:
     image: mongo:4.2
-    ## update host in config.yaml to map to this container name
+    # update host in config.yaml to map to this container name
     container_name: mongo
     # uses docker volume on host system, data is not transferrable between systems
     volumes:
