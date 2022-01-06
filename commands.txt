@@ -6,7 +6,7 @@ docker-compose run --rm zeek -r test.pcap
 docker-compose run --rm rita import /logs db1
 
 #rita show-beacons and append to file
-docker-compose run --rm rita show-beacons db1 >> ./beacon_results/db1_beacons.csv
+docker-compose run --rm rita show-beacons db1 > db1_beacons.csv
 
 
 
