@@ -1,4 +1,4 @@
-# ZEEK_RITA_
+# ZEEK_RITA_docker-compose
 
 This is a docker-compose project to incorporate RITA and ZEEK docker images for adhoc beacon analysis.
 
