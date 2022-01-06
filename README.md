@@ -2,7 +2,8 @@
 
 This is a docker-compose project to incorporate RITA and ZEEK docker images for adhoc Beacon analysis.
 
-Step 1: 
+
+# Step 1: 
 place pcap in the /zeek_logs_pcap folder. test.pcap already exits if you want to test. you can use the command below to test the conatainer. 
 
 docker-compose run --rm zeek -r test.pcap
