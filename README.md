@@ -2,22 +2,30 @@
 
 This is a docker-compose project to incorporate RITA and ZEEK docker images for adhoc beacon analysis.
 
-Original docker-compose came frome active countersmeasures RITA repository. 
+Original docker-compose.yaml came frome active countersmeasures RITA repository. 
 blacktop/zeek was added to the docker-compose file for an easy spin up of all containers.
-
 
 
 **Easy Mode:** Run the script! It automates the show beacons portion of rita.
 * the script is not fancy, pay attention to wording. No tab completions!
 
+Place the pcap you want to analyze in /zeek_logs_pcap. 
+test.pcap already exits if you want to test for an example.
+
+**Easy Mode:** Run the script! It automates the commands from PCAP > ZEEK > RITA > show-beacons.csv
+* the script is not fancy, pay attention to wording. No tab completions!
+
 ``` sh script.sh ```
+
+
+***STEPS WITHOUT THE SCRIPT***
 
 **Step 1:** 
 
 Place the pcap you want to analyze in /zeek_logs_pcap. 
 test.pcap already exits if you want to test for an example.
 
-If you already have ZEEK logs you want rita to analyze, place the logs in /zeek_logs_pcap and skip to step 3. 
+If you already have ZEEK logs you want RITA to analyze, place the logs in /zeek_logs_pcap and skip to step 3. 
 
 
 **Step 2:**
