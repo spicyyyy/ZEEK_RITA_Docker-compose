@@ -13,7 +13,7 @@ Place the pcap you want to analyze in /zeek_logs_pcap.
 test.pcap already exits if you want to test for an example.
 
 **Easy Mode:** Run the script! It automates the commands from PCAP > ZEEK > RITA > show-beacons.csv
-* the script is not fancy, pay attention to wording. No tab completions!
+* the script is not fancy, pay attention to the wording. No tab completions!
 
 ``` sh script.sh ```
 
