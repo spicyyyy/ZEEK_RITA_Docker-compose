@@ -7,13 +7,10 @@ blacktop/zeek was added to the docker-compose file for an easy spin up of all co
 
 
 **Easy Mode:** Run the script! It automates the show beacons portion of rita.
-* the script is not fancy, pay attention to wording. No tab completions!
+* the script is not fancy, pay attention to the wording. No tab completions!
 
 Place the pcap you want to analyze in /zeek_logs_pcap. 
 test.pcap already exits if you want to test for an example.
-
-**Easy Mode:** Run the script! It automates the commands from PCAP > ZEEK > RITA > show-beacons.csv
-* the script is not fancy, pay attention to the wording. No tab completions!
 
 ``` sh script.sh ```
 
