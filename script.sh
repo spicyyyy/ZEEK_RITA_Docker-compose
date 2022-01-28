@@ -3,18 +3,18 @@ echo "
 ##################################################################
 #                                                                #
 #                                                                #
-#                   ZEEK & RITA docker-compose script         	 # 
+#                  ZEEK & RITA docker-compose script         	 # 
 #                                                                #
 #                                                                #
 ##################################################################"
 
 echo "\nThis is a simple script to automate PCAP > ZEEK > RITA > BEACONS "
 
-echo "\nYou if the pcap is not listed below it needs to be added to the ./zeek_log_pcap folder."
+echo "\nIf the pcap is not listed below it needs to be added to the ./zeek_log_pcap folder.\n"
 ls ./zeek_logs_pcap | grep .pcap
-echo "\nIf you see you pcap file. type it in and press enter. "
+echo "\nIf you see you pcap file. type it in and press enter. Tab complete does not work, and DO NOT provide full path.  "
 read pcapname
-echo "\n\nInsert a name of your choosing for the output of RITA beacon results, then press enter. "
+echo "\n\nInsert a unique name for the output of the RITA beacons "
 read ritadb
 
 #zeek command for pcap to zeek
