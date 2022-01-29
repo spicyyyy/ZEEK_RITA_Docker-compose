@@ -29,6 +29,6 @@ docker-compose run -e ritadbw --rm rita import /logs $ritadbw
 
 wait
 #rita show-beacons and write to file
-docker-compose run -e retadw --rm rita show-beacons $ritadbw > $ritadbw.csv
+docker-compose run -e ritadbw --rm rita show-beacons $ritadbw > $ritadbw.csv
 
-echo "/n/nYour results are in the $retadw file."
+echo "/n/nYour results are in the $ritadbw.csv file."
