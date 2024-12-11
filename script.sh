@@ -19,16 +19,16 @@ read ritadb
 
 #zeek command for pcap to zeek
 export pcapnamew=$pcapname
-docker-compose run -e pcapnamew --rm zeek -r $pcapnamew
+docker compose run -e pcapnamew --rm zeek -r $pcapnamew
 
 wait
 
 #rita command to import logs
 export ritadbw=$ritadb
-docker-compose run -e ritadbw --rm rita import /logs $ritadbw
+docker compose run -e ritadbw --rm rita import /logs $ritadbw
 
 wait
 #rita show-beacons and write to file
-docker-compose run -e ritadbw --rm rita show-beacons $ritadbw > $ritadbw.csv
+docker compose run -e ritadbw --rm rita show-beacons $ritadbw > $ritadbw+show-beacon.csv
 
-echo "/n/nYour results are in the $ritadbw.csv file."
+echo "\n\nYour results are in the $ritadbw.csv file."
