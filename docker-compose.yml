@@ -1,33 +1,100 @@
-services:
-  db:
-    image: mongo:4.2
-    # update host in config.yaml to map to this container name
-    container_name: mongo
-    # uses docker volume on host system, data is not transferrable between systems
-    volumes:
-      - db:/data/db/
+###############################################################
+#  ZEEK + RITA v5  |  Network Threat Detection Stack
+#  Supports: PCAP analysis + Live interface monitoring
+#  Outputs:  CSV reports + Web dashboard + Terminal
+###############################################################
 
-  rita:
-    image: quay.io/activecm/rita:${VERSION:-latest}
-    # needed to ensure creation of database on first run
-    depends_on:
-      - db
-    # set environment paths to container volume mount points
-    environment:
-      - CONFIG=/etc/rita/config.yaml
-      - LOGS=/logs
-    # bind mount for local configs and logs, make sure it matches environment
-    volumes:
-      - ./config.yaml:/etc/rita/config.yaml:ro
-      - ./zeek_logs_pcap:/logs:ro
-  
-  zeek:
-    image: blacktop/zeek
+networks:
+  rita-network: {}
 
-    volumes:
-      - ./zeek_logs_pcap:/pcap
-      - ./zeek_logs_pcap:/usr/local/zeek-3.0.0/share/zeek/site/local.zeek
-
-# local docker volume used by mongo
 volumes:
-  db:
+  clickhouse_data:
+
+services:
+
+  # ─────────────────────────────────────────────────────────
+  # ZEEK  — Network traffic analyzer
+  # Converts PCAP files or live traffic into TSV logs
+  # ─────────────────────────────────────────────────────────
+  zeek:
+    image: ghcr.io/activecm/docker-zeek:latest
+    container_name: zeek
+    restart: "no"
+    network_mode: host            # required for live interface capture
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    volumes:
+      - ./pcaps:/pcaps:ro         # drop your .pcap files here
+      - ./zeek-logs:/zeek-logs    # zeek writes logs here → rita reads here
+    environment:
+      - ZEEK_LOGS_DIR=/zeek-logs
+
+  # ─────────────────────────────────────────────────────────
+  # CLICKHOUSE  — High-performance analytics database
+  # RITA v5's backend (replaced MongoDB)
+  # ─────────────────────────────────────────────────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: clickhouse
+    restart: unless-stopped
+    networks:
+      - rita-network
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      start_period: 10s
+      retries: 20
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - /etc/localtime:/etc/localtime:ro
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 131070
+        hard: 131070
+
+  # ─────────────────────────────────────────────────────────
+  # RITA  — Threat analytics engine
+  # Analyzes zeek logs for beacons, C2, DNS tunneling, etc.
+  # ─────────────────────────────────────────────────────────
+  rita:
+    image: ghcr.io/activecm/rita:v5.1.1
+    container_name: rita
+    restart: "no"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - rita-network
+    volumes:
+      - ./zeek-logs:/zeek-logs:ro       # reads logs zeek produced
+      - ./results:/results              # CSV output lands here
+      - ./rita-config/config.hjson:/config.hjson:ro
+    environment:
+      - DB_ADDRESS=clickhouse:9000
+      - TERM=xterm-256color
+
+  # ─────────────────────────────────────────────────────────
+  # RITA WEB  — Browser-based threat dashboard
+  # Visit http://localhost:8080 after running rita import
+  # ─────────────────────────────────────────────────────────
+  rita-web:
+    image: ghcr.io/activecm/rita:v5.1.1
+    container_name: rita-web
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - rita-network
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_ADDRESS=clickhouse:9000
+      - TERM=xterm-256color
+    command: ["server"]
