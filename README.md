@@ -1,88 +1,48 @@
-# 🔍 ZEEK + RITA v2 — Network Threat Detection
+# 🔍 ZEEK + RITA — Network Threat Detection
 
-Detect **beacons**, **C2 channels**, **DNS tunneling**, and more.  
+Detect **beacons**, **C2 channels**, and **DNS tunneling** using Zeek + RITA v5.  
 Supports **PCAP analysis** and **live interface monitoring**.  
-Outputs to **CSV**, **terminal**, and a **web dashboard**.
+Outputs to **CSV**, **terminal**, and a **web dashboard at http://localhost:8080**.
 
 ---
 
-## ⚡ Quick Start (3 Steps)
+## ⚡ Quick Start
 
-**Step 1** — Clone and enter the project
-```bash
-git clone https://github.com/spicyyyy/ZEEK_RITA_Docker-compose.git zeek-rita
-cd zeek-rita
+### PowerShell (Windows)
+```powershell
+.\analyze.ps1
 ```
 
-**Step 2** — Make the script executable
+### Bash (WSL / Linux)
 ```bash
 chmod +x analyze.sh
-```
-
-**Step 3** — Run it
-```bash
 ./analyze.sh
 ```
 
-The script will ask you what you want to do — just follow the prompts.
+Both scripts give you the same interactive menu — just pick what you want to do.
 
 ---
 
 ## 📁 Folder Structure
 
 ```
-zeek-rita-v2/
-├── analyze.sh          ← Main script — run this
-├── docker-compose.yml  ← All services defined here
+├── analyze.ps1          ← Run this on PowerShell (Windows)
+├── analyze.sh           ← Run this on WSL/Linux
+├── docker-compose.yml   ← All services
 ├── rita-config/
-│   └── config.hjson   ← RITA settings (edit your subnets here)
-├── pcaps/              ← Drop your .pcap files here
-├── zeek-logs/          ← Zeek writes logs here (auto-generated)
-└── results/            ← Your CSV beacon reports land here
+│   └── config.hjson     ← ⚠️ Edit your InternalSubnets here
+├── pcaps/               ← Drop your .pcap files here
+├── zeek-logs/           ← Zeek writes logs here (auto)
+└── results/             ← CSV reports land here
 ```
 
 ---
 
-## 🛠️ What Each Service Does
+## ⚙️ Before First Run — Edit Your Subnets
 
-| Service | What It Does |
-|---|---|
-| **zeek** | Converts PCAP or live traffic into connection logs |
-| **clickhouse** | High-performance database (stores all RITA data) |
-| **rita** | Analyzes zeek logs — finds beacons, C2, DNS tunneling |
-| **rita-web** | Web dashboard at http://localhost:8080 |
-
----
-
-## 🎯 Use Cases
-
-### Analyze a PCAP file
-1. Copy your `.pcap` file into the `./pcaps/` folder
-2. Run `./analyze.sh`
-3. Choose option `[1]`
-4. Type the filename and a dataset name
-5. Get results in `./results/` and at http://localhost:8080
-
-### Monitor live traffic
-1. Run `./analyze.sh`
-2. Choose option `[2]`
-3. Enter your network interface (e.g. `eth0`)
-4. Press `Ctrl+C` when done capturing
-5. Results saved automatically
-
-### Just open the dashboard
-1. Run `./analyze.sh`
-2. Choose option `[3]`
-3. Open http://localhost:8080
-
----
-
-## ⚙️ Configuration
-
-Edit `rita-config/config.hjson` before your first run:
+Open `rita-config/config.hjson` and set your network ranges:
 
 ```
-// Set your internal network ranges
 InternalSubnets: [
   "10.0.0.0/8",
   "172.16.0.0/12",
@@ -90,8 +50,18 @@ InternalSubnets: [
 ]
 ```
 
-This tells RITA what counts as "internal" vs "external" traffic.  
-**This is important** — wrong subnets = wrong analysis.
+This tells RITA what's "internal" vs "external". **Wrong subnets = wrong results.**
+
+---
+
+## 🛠️ Services
+
+| Service | What It Does |
+|---|---|
+| **zeek** | Converts PCAPs or live traffic into connection logs |
+| **clickhouse** | Analytics database (RITA v5 backend) |
+| **rita** | Detects beacons, C2, DNS tunneling |
+| **rita-web** | Web dashboard at http://localhost:8080 |
 
 ---
 
@@ -101,39 +71,23 @@ This tells RITA what counts as "internal" vs "external" traffic.
 # Stop everything
 docker compose down
 
-# Wipe the database and start fresh
+# Wipe database and start fresh
 docker compose down -v
 
-# Check running containers
+# Check what's running
 docker compose ps
 
-# View RITA logs
+# View logs
 docker compose logs rita
-
-# View Zeek logs
 docker compose logs zeek
 ```
 
 ---
 
-## 📦 Stack Versions
+## 📦 Stack
 
 | Tool | Version |
 |---|---|
 | Zeek | Latest (activecm/docker-zeek) |
 | RITA | v5.1.1 |
 | ClickHouse | 24.3 |
-
----
-
-## 🔄 What Changed from v1
-
-| Old (v1) | New (v2) |
-|---|---|
-| blacktop/zeek (Zeek 3, unmaintained) | activecm/docker-zeek (latest) |
-| MongoDB | ClickHouse (faster, built for analytics) |
-| RITA v4 (no web UI) | RITA v5 (includes web dashboard) |
-| Broken volume mounts | Fixed and tested |
-| Inconsistent script | Clean interactive menu |
-| No live capture support | Full live interface support |
-| Manual commands only | One script does everything |

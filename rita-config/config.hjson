@@ -1,0 +1,30 @@
+{
+  // RITA v5 Configuration
+  // Docs: https://github.com/activecm/rita
+
+  // ⚠️ EDIT THIS — set your actual internal network ranges
+  InternalSubnets: [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+  ]
+
+  // Minimum connections between two hosts to run beacon analysis
+  // Lower = more results + more false positives
+  BeaconMinimumConnectionThreshold: 20
+
+  // Filter out common noise
+  NeverInclude: [
+    "0.0.0.0/32",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+    "224.0.0.0/4",
+    "255.255.255.255/32",
+    "::1/128",
+    "fe80::/10",
+    "ff00::/8"
+  ]
+
+  // Log level: 3=debug, 2=info, 1=warn, 0=error
+  LogLevel: 2
+}

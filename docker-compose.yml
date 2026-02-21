@@ -13,27 +13,23 @@ volumes:
 services:
 
   # ─────────────────────────────────────────────────────────
-  # ZEEK  — Network traffic analyzer
-  # Converts PCAP files or live traffic into TSV logs
+  # ZEEK — Converts PCAPs or live traffic into TSV logs
   # ─────────────────────────────────────────────────────────
   zeek:
     image: ghcr.io/activecm/docker-zeek:latest
     container_name: zeek
     restart: "no"
-    network_mode: host            # required for live interface capture
+    network_mode: host
     cap_add:
       - NET_ADMIN
       - NET_RAW
       - SYS_NICE
     volumes:
-      - ./pcaps:/pcaps:ro         # drop your .pcap files here
-      - ./zeek-logs:/zeek-logs    # zeek writes logs here → rita reads here
-    environment:
-      - ZEEK_LOGS_DIR=/zeek-logs
+      - ./pcaps:/pcaps:ro
+      - ./zeek-logs:/zeek-logs
 
   # ─────────────────────────────────────────────────────────
-  # CLICKHOUSE  — High-performance analytics database
-  # RITA v5's backend (replaced MongoDB)
+  # CLICKHOUSE — RITA v5 database backend
   # ─────────────────────────────────────────────────────────
   clickhouse:
     image: clickhouse/clickhouse-server:24.3
@@ -59,8 +55,7 @@ services:
         hard: 131070
 
   # ─────────────────────────────────────────────────────────
-  # RITA  — Threat analytics engine
-  # Analyzes zeek logs for beacons, C2, DNS tunneling, etc.
+  # RITA — Beacon / C2 / DNS tunnel detection engine
   # ─────────────────────────────────────────────────────────
   rita:
     image: ghcr.io/activecm/rita:v5.1.1
@@ -72,16 +67,15 @@ services:
     networks:
       - rita-network
     volumes:
-      - ./zeek-logs:/zeek-logs:ro       # reads logs zeek produced
-      - ./results:/results              # CSV output lands here
+      - ./zeek-logs:/zeek-logs:ro
+      - ./results:/results
       - ./rita-config/config.hjson:/config.hjson:ro
     environment:
       - DB_ADDRESS=clickhouse:9000
       - TERM=xterm-256color
 
   # ─────────────────────────────────────────────────────────
-  # RITA WEB  — Browser-based threat dashboard
-  # Visit http://localhost:8080 after running rita import
+  # RITA WEB — Dashboard at http://localhost:8080
   # ─────────────────────────────────────────────────────────
   rita-web:
     image: ghcr.io/activecm/rita:v5.1.1

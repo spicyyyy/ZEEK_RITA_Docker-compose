@@ -1,0 +1,15 @@
+# PCAPs (usually large — don't commit)
+pcaps/*.pcap
+pcaps/*.pcapng
+
+# Zeek generated logs
+zeek-logs/*.log
+zeek-logs/*.gz
+
+# CSV results
+results/*.csv
+
+# Keep folder structure in git
+!pcaps/.gitkeep
+!zeek-logs/.gitkeep
+!results/.gitkeep
