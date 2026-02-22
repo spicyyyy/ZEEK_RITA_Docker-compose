@@ -13,3 +13,9 @@ results/*.csv
 !pcaps/.gitkeep
 !zeek-logs/.gitkeep
 !results/.gitkeep
+
+# Claude Code internals
+.claude/
+
+# Environment secrets
+rita-config/.env

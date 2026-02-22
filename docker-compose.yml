@@ -16,7 +16,7 @@ services:
   # ZEEK — Converts PCAPs or live traffic into TSV logs
   # ─────────────────────────────────────────────────────────
   zeek:
-    image: ghcr.io/activecm/docker-zeek:latest
+    image: blacktop/zeek:latest
     container_name: zeek
     restart: "no"
     network_mode: host
@@ -24,6 +24,7 @@ services:
       - NET_ADMIN
       - NET_RAW
       - SYS_NICE
+    working_dir: /zeek-logs
     volumes:
       - ./pcaps:/pcaps:ro
       - ./zeek-logs:/zeek-logs
@@ -32,7 +33,7 @@ services:
   # CLICKHOUSE — RITA v5 database backend
   # ─────────────────────────────────────────────────────────
   clickhouse:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.1
     container_name: clickhouse
     restart: unless-stopped
     networks:
@@ -48,6 +49,7 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - /etc/localtime:/etc/localtime:ro
+      - ./rita-config/clickhouse-users.xml:/etc/clickhouse-server/users.d/default-user.xml:ro
     ulimits:
       nproc: 65535
       nofile:
@@ -61,6 +63,7 @@ services:
     image: ghcr.io/activecm/rita:v5.1.1
     container_name: rita
     restart: "no"
+    working_dir: /rita-config
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -69,26 +72,18 @@ services:
     volumes:
       - ./zeek-logs:/zeek-logs:ro
       - ./results:/results
-      - ./rita-config/config.hjson:/config.hjson:ro
+      - ./rita-config:/rita-config:ro
+      - ./rita-config/.env:/.env:ro
     environment:
       - DB_ADDRESS=clickhouse:9000
+      - CLICKHOUSE_USERNAME=default
+      - CLICKHOUSE_PASSWORD=
+      - LOG_LEVEL=2
+      - LOGGING_ENABLED=true
+      - SYSLOG_ADDRESS=localhost:514
+      - CONFIG_DIR=/rita-config
+      - CONFIG_FILE=/rita-config/config.hjson
+      - APP_LOGS=/results
+      - LOGS=/zeek-logs
       - TERM=xterm-256color
 
-  # ─────────────────────────────────────────────────────────
-  # RITA WEB — Dashboard at http://localhost:8080
-  # ─────────────────────────────────────────────────────────
-  rita-web:
-    image: ghcr.io/activecm/rita:v5.1.1
-    container_name: rita-web
-    restart: unless-stopped
-    depends_on:
-      clickhouse:
-        condition: service_healthy
-    networks:
-      - rita-network
-    ports:
-      - "8080:8080"
-    environment:
-      - DB_ADDRESS=clickhouse:9000
-      - TERM=xterm-256color
-    command: ["server"]

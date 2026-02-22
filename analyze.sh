@@ -30,9 +30,8 @@ start_db() {
 }
 
 start_dashboard() {
-  echo -e "${YELLOW}[*] Starting RITA web dashboard...${NC}"
-  docker compose up -d rita-web clickhouse
-  echo -e "${GREEN}[+] Dashboard → http://localhost:8080${NC}"
+  echo -e "${YELLOW}[*] Ensuring ClickHouse is running...${NC}"
+  docker compose up -d clickhouse
 }
 
 mode_pcap() {
@@ -54,27 +53,38 @@ mode_pcap() {
   done
 
   echo ""
-  read -p "Enter the PCAP filename (e.g. test.pcap): " pcap_name
-  [ ! -f "./pcaps/$pcap_name" ] && echo -e "${RED}[ERROR] Not found: ./pcaps/$pcap_name${NC}" && exit 1
+  read -p "Enter the number of the PCAP to analyze: " selection
+  if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -ge "${#found[@]}" ]; then
+    echo -e "${RED}[ERROR] Invalid selection.${NC}"
+    exit 1
+  fi
+  pcap_name=$(basename "${found[$selection]}")
 
-  read -p "Enter a dataset name (letters/numbers/underscores): " dataset_name
-  [[ ! "$dataset_name" =~ ^[a-zA-Z0-9_]+$ ]] && echo -e "${RED}[ERROR] Invalid name.${NC}" && exit 1
+  # Auto-generate dataset name from PCAP filename + timestamp
+  base="${pcap_name%.*}"
+  sanitized=$(echo "$base" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '_' | sed 's/__*/_/g' | sed 's/^_//;s/_$//')
+  [[ "$sanitized" =~ ^[0-9] ]] && sanitized="pcap_${sanitized}"
+  sanitized="${sanitized:0:24}"; sanitized="${sanitized%_}"
+  dataset_name="${sanitized}_$(date +%Y%m%d_%H%M%S)"
+  echo -e "${CYAN}Dataset name: $dataset_name${NC}"
 
   echo ""
   echo -e "${YELLOW}[1/3] Running Zeek on $pcap_name ...${NC}"
   rm -f ./zeek-logs/*.log ./zeek-logs/*.gz 2>/dev/null
-  docker compose run --rm zeek zeek -C -r /pcaps/$pcap_name local
+  docker compose run --rm zeek -C -r /pcaps/$pcap_name local
   echo -e "${GREEN}[+] Zeek logs written to ./zeek-logs/${NC}"
 
   echo ""
   echo -e "${YELLOW}[2/3] Importing logs into RITA ...${NC}"
-  docker compose run --rm rita rita import --database="$dataset_name" --logs=/zeek-logs
+  docker compose run --rm rita import --database "$dataset_name" --logs /zeek-logs
   echo -e "${GREEN}[+] Import complete. Dataset: $dataset_name${NC}"
 
   echo ""
   echo -e "${YELLOW}[3/3] Exporting beacon results to CSV ...${NC}"
   output_file="./results/${dataset_name}_beacons_$(date +%Y%m%d_%H%M%S).csv"
-  docker compose run --rm rita rita show-beacons "$dataset_name" > "$output_file"
+  curl -sS "http://localhost:8123/" \
+    -d "SELECT beacon_threat_score, beacon_score, src, dst, fqdn, count, port_proto_service, beacon_type, long_conn_score, strobe_score, c2_over_dns_score, threat_intel, total_bytes, last_seen FROM ${dataset_name}.threat_mixtape ORDER BY beacon_threat_score DESC FORMAT CSVWithNames" \
+    > "$output_file"
 
   echo ""
   echo -e "${CYAN}── BEACON RESULTS ─────────────────────────────────${NC}"
@@ -83,7 +93,6 @@ mode_pcap() {
   echo ""
   echo -e "${GREEN}✔ Done!${NC}"
   echo -e "   CSV  → $output_file"
-  echo -e "   Web  → http://localhost:8080"
 }
 
 mode_live() {
@@ -97,23 +106,28 @@ mode_live() {
 
   echo ""
   echo -e "${YELLOW}[*] Starting Zeek on $iface — press Ctrl+C to stop.${NC}"
-  docker compose run --rm -e ZEEK_INTERFACE="$iface" zeek zeek -i "$iface" local
+  docker compose run --rm -e ZEEK_INTERFACE="$iface" zeek -i "$iface" local
 
   echo -e "${GREEN}[+] Capture stopped. Logs in ./zeek-logs/${NC}"
 
-  read -p "Dataset name (letters/numbers/underscores): " dataset_name
+  # Auto-generate dataset name from interface + timestamp
+  sanitized=$(echo "$iface" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '_' | sed 's/__*/_/g' | sed 's/^_//;s/_$//')
+  dataset_name="live_${sanitized}_$(date +%Y%m%d_%H%M%S)"
+  echo -e "${CYAN}Dataset name: $dataset_name${NC}"
 
-  docker compose run --rm rita rita import --database="$dataset_name" --logs=/zeek-logs
+  docker compose run --rm rita import --database "$dataset_name" --logs /zeek-logs
 
   output_file="./results/${dataset_name}_beacons_$(date +%Y%m%d_%H%M%S).csv"
-  docker compose run --rm rita rita show-beacons "$dataset_name" > "$output_file"
+  curl -sS "http://localhost:8123/" \
+    -d "SELECT beacon_threat_score, beacon_score, src, dst, fqdn, count, port_proto_service, beacon_type, long_conn_score, strobe_score, c2_over_dns_score, threat_intel, total_bytes, last_seen FROM ${dataset_name}.threat_mixtape ORDER BY beacon_threat_score DESC FORMAT CSVWithNames" \
+    > "$output_file"
 
   echo ""
   echo -e "${CYAN}── BEACON RESULTS ─────────────────────────────────${NC}"
   cat "$output_file"
   echo -e "${CYAN}───────────────────────────────────────────────────${NC}"
   echo ""
-  echo -e "${GREEN}✔ Done! CSV → $output_file  |  Web → http://localhost:8080${NC}"
+  echo -e "${GREEN}✔ Done! CSV → $output_file${NC}"
 }
 
 mode_cleanup() {
@@ -131,18 +145,16 @@ main() {
   echo "What do you want to do?"
   echo "  [1] Analyze a PCAP file"
   echo "  [2] Capture live traffic"
-  echo "  [3] Start web dashboard only"
-  echo "  [4] Clean up everything (wipe DB + logs)"
-  echo "  [5] Exit"
+  echo "  [3] Clean up everything (wipe DB + logs)"
+  echo "  [4] Exit"
   echo ""
-  read -p "Choice [1-5]: " choice
+  read -p "Choice [1-4]: " choice
 
   case "$choice" in
     1) start_dashboard; mode_pcap ;;
     2) start_dashboard; mode_live ;;
-    3) start_dashboard ;;
-    4) mode_cleanup ;;
-    5) echo "Bye!"; exit 0 ;;
+    3) mode_cleanup ;;
+    4) echo "Bye!"; exit 0 ;;
     *) echo -e "${RED}Invalid choice.${NC}"; exit 1 ;;
   esac
 }
